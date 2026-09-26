@@ -9,6 +9,10 @@ It is a thin, honest wrapper over LibreTranslate's REST API. It does no
 translation itself, has no glossary, no document translation, and no
 translation memory.
 
+**Deployment has not happened yet.** The open items, the commands that close
+them, and the traps for the next session live in
+[`unraid-stack/docs/LIBRETRANSLATE-MCP-NEXT.md`](https://github.com/BaconDroid/unraid-stack/blob/main/docs/LIBRETRANSLATE-MCP-NEXT.md).
+
 ---
 
 ## What is verified, and what is not
