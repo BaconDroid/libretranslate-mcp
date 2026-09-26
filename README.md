@@ -17,17 +17,31 @@ The badge above is the source of truth for the current CI state. This section
 deliberately makes no claim about it, because such claims go stale on every
 run. What follows are durable facts, none of which a CI run can change.
 
-**Not verified — runtime behaviour**
+**Verified against pinned upstream source, not observed at runtime**
 
-- The client has **never been pointed at a real LibreTranslate instance**. The
-  response shapes it parses are implemented from a reading of LibreTranslate's
-  `app.py`, not from observed traffic. That is why the parsing is defensive: a
-  payload mismatch is designed to fail loudly, but it has never actually
-  mismatched in the wild.
+- The three response shapes this client parses were read directly out of
+  LibreTranslate's own code at commit `4aca61bd` (release `v1.9.6`), and each
+  one matches what the client expects:
+  - `POST /translate` returns `{"translatedText": <string>}`, adding
+    `detectedLanguage` as `{language, confidence}` only when `source` is
+    `"auto"`, and `alternatives` — an array of **plain strings** — only when
+    `alternatives > 0`. A second return in that route is a translation-cache
+    hit serving the same shape, not a different one.
+  - `GET /languages` returns `[{code, name, targets}]`.
+  - `POST /detect` returns an array of `{language, confidence}`. The upstream
+    `model2iso` helper preserves that dict and only lowercases the code.
+  - Two details worth knowing: upstream filters the primary translation out of
+    its own `alternatives` list, so fewer candidates can come back than were
+    requested; and a **batch** `q` (an array) puts a *list* into
+    `translatedText`. This client only ever sends a string, so it never reaches
+    that branch.
+- What is still unverified is the round trip: **no request has ever been
+  observed.** The contract above is anchored to a named commit, so if upstream
+  changes it, the claim is falsifiable rather than stale-by-assertion. The
+  defensive parsing stays, because a match on paper is not a match on the wire.
 - The server has **never been started against a real upstream**. Neither
-  transport has been observed working, no request has ever been served, and the
-  bearer auth, the body cap and the 401/405/413 paths have only been reasoned
-  about, never exercised.
+  transport has been observed working, and the bearer auth, the body cap and
+  the 401/405/413 paths have only been reasoned about, never exercised.
 
 **Dependency surface**
 
