@@ -39,3 +39,44 @@ jobs:
           context: .
           push: false
           tags: libretranslate-mcp:ci
+
+  # Publishes the image to ghcr.io so the Unraid template has something real
+  # to pull. Gated on `build` so nothing ships from a commit that does not
+  # typecheck, and on the repository name so a fork publishes nothing.
+  #
+  # Note: a package created with GITHUB_TOKEN is PRIVATE by default even when
+  # the repository is public. It has to be flipped to public once, by hand, in
+  # the package settings, before Docker can pull it without a token. That
+  # manual step is unavoidable from CI.
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.repository == 'BaconDroid/libretranslate-mcp'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/libretranslate-mcp
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
