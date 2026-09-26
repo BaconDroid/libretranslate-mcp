@@ -65,14 +65,3 @@ export interface LanguagesResult {
   skipped: number;
   raw: unknown;
 }
-
-/** Successful tool result: a single JSON text block. */
-export interface ToolTextResult {
-  content: { type: "text"; text: string }[];
-}
-
-/** Failed tool result, reported to the client as a tool error rather than a crash. */
-export interface ToolErrorResult {
-  isError: true;
-  content: { type: "text"; text: string }[];
-}

@@ -1,17 +1,17 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 import { LibreTranslateClient } from "../services/libretranslate.js";
-import type { ToolErrorResult, ToolTextResult } from "../types.js";
 
 /** Upper bound accepted for the `alternatives` input. */
 const MAX_ALTERNATIVES = 10;
 
-function textResult(payload: unknown): ToolTextResult {
+function textResult(payload: unknown): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
 }
 
-function errorResult(message: string): ToolErrorResult {
+function errorResult(message: string): CallToolResult {
   return { isError: true, content: [{ type: "text", text: message }] };
 }
 

@@ -9,38 +9,46 @@ translation memory.
 
 ---
 
-## Read this first: this code has never been compiled
+## Read this first: the typecheck is not green yet, and the runtime is unverified
 
-The machine this project was written on has **no Node.js, no npm, and no
-Docker**. Not a single command in this repository has been run:
+The project was written on a machine with **no Node.js, no npm, and no
+Docker**. It is now compiled by CI (`.github/workflows/build.yml`), and the
+first run is the ground truth:
 
-- `npm install` — never executed
-- `npm run build` / `tsc` — never executed, so there is **no** typecheck, **no**
-  compile result, and **no** evidence that the TypeScript is even syntactically
-  or type-correct
-- `npm start` — never executed, so the server has never started and neither
-  transport has been observed working
+- `npm install` — **resolves cleanly** in CI
+- `tsc --noEmit` — **runs**, and reported **exactly 3 errors**, all in
+  `src/tools/`: the callbacks passed to `server.registerTool` returned
+  hand-rolled result interfaces that are not structurally assignable to the
+  SDK's expected tool-result type
+- those three have been rewritten to return the SDK's own `CallToolResult`
+  type, but **whether that actually fixes the typecheck is unknown**: the
+  next CI run is the first thing that can say so. Read the build badge, not
+  this paragraph
+- the server has **never been started**. Neither transport has been observed
+  working, and no request has ever been served
+- the Docker image has **never been built**
 - the client has **never been pointed at a real LibreTranslate instance**, so
-  the response shapes it parses are implemented from LibreTranslate's `app.py`
-  source reading, not from observed traffic
+  the response shapes it parses are still implemented from a reading of
+  LibreTranslate's `app.py`, not from observed traffic
 
-Do not treat this repository as a passing build. It is unverified source code.
-The first thing to do on a machine with Node 20+ is:
+So: the code is now far enough along that a typechecker can read it, and it
+has been made to compile cleanly **as far as anyone knows** — but nothing here
+should be read as a passing build until CI says so, and nothing here has been
+exercised at runtime. To reproduce locally on a machine with Node 20+:
 
 ```sh
 npm install
-npm run typecheck     # expect to fix real errors on the first run
+npm run typecheck
 npm run build
 ```
 
-If those pass, then — and only then — the Docker image in the sibling
-Unraid repository is worth building.
+If the typecheck is green, then — and only then — the Docker image is worth
+building.
 
 **Also unverified:** the exact `@modelcontextprotocol/sdk` API surface this
 code targets. The `McpServer` / `registerTool` / `StreamableHTTPServerTransport`
-calls follow the SDK's documented usage, but `package.json` pins a caret range
-(`^1.12.0`) that was never resolved against a registry, so the installed version
-may differ from the one the code was written against.
+calls follow the SDK's documented usage against a caret range, so a newer
+minor release can change types under the code without any local warning.
 
 ---
 
