@@ -32,8 +32,14 @@ jobs:
       # ships. The upstream is a stub serving the LibreTranslate response shapes
       # confirmed in source; this validates the server and its parsing, not
       # LibreTranslate, and it does not cover the stdio transport.
-      - name: Smoke test
+      - name: Smoke test (http)
         run: npm run test:smoke
+
+      # The stdio transport is the default when the server is spawned locally, so
+      # a stray write to stdout would corrupt its framing. This asserts that
+      # stdout carries only JSON-RPC and that diagnostics go to stderr.
+      - name: Smoke test (stdio)
+        run: npm run test:smoke:stdio
 
   docker:
     runs-on: ubuntu-latest
