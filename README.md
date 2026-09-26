@@ -11,7 +11,9 @@ translation memory.
 
 **Deployment has not happened yet.** The open items, the commands that close
 them, and the traps for the next session live in
-[`unraid-stack/docs/LIBRETRANSLATE-MCP-NEXT.md`](https://github.com/BaconDroid/unraid-stack/blob/main/docs/LIBRETRANSLATE-MCP-NEXT.md).
+`unraid-stack/docs/LIBRETRANSLATE-MCP-NEXT.md` — in the **private**
+`BaconDroid/unraid-stack` repository, so the link below resolves only for
+account holders, not for anonymous visitors.
 
 ---
 
