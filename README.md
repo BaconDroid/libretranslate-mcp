@@ -23,7 +23,7 @@ The badge above is the source of truth for the current CI state. This section
 deliberately makes no claim about it, because such claims go stale on every
 run. What follows are durable facts, none of which a CI run can change.
 
-**Verified against pinned upstream source, not observed at runtime**
+**Verified against pinned upstream source, and exercised end to end**
 
 - The three response shapes this client parses were read directly out of
   LibreTranslate's own code at commit `4aca61bd` (release `v1.9.6`), and each
@@ -41,13 +41,37 @@ run. What follows are durable facts, none of which a CI run can change.
     requested; and a **batch** `q` (an array) puts a *list* into
     `translatedText`. This client only ever sends a string, so it never reaches
     that branch.
-- What is still unverified is the round trip: **no request has ever been
-  observed.** The contract above is anchored to a named commit, so if upstream
-  changes it, the claim is falsifiable rather than stale-by-assertion. The
-  defensive parsing stays, because a match on paper is not a match on the wire.
-- The server has **never been started against a real upstream**. Neither
-  transport has been observed working, and the bearer auth, the body cap and
-  the 401/405/413 paths have only been reasoned about, never exercised.
+- The HTTP transport was then **executed**, against a stub serving exactly those
+  three shapes. Observed, not reasoned about:
+  - `GET /health` → 200 with `authEnabled` reported truthfully;
+    `POST /mcp` with no or a wrong token → 401; `GET /mcp` → 405; a body over
+    `MAX_BODY_BYTES` → 413; an unknown path → 404.
+  - The MCP handshake completes: `initialize` returns 200 with
+    `protocolVersion 2025-06-18`, and `tools/list` on a **second** request
+    returns all three tools with their schemas. That second request is the point:
+    it is what a fresh server per request means in practice, and it is the
+    defect `createServer()` exists to fix in the sibling repo.
+  - `tools/call` on all three tools parses the contract correctly, including
+    `detectedLanguage` appearing only for `source: "auto"` and the
+    `requested`/`returned` accounting on `alternatives`.
+  - The defensive paths fire as designed: `format: "html"` with
+    `alternatives > 0` is refused before any network call, a non-2xx response
+    reports the status, the upstream body and the endpoint, and a 200 whose
+    shape is unrecognised fails loudly with the received payload quoted rather
+    than returning `undefined`.
+
+Two limits on that evidence, both real:
+
+- **It ran under Bun 1.4.2, not Node.** The shipped image is `node:22-alpine`.
+  Bun implements `node:http`, `node:crypto` and `fetch`, so the run is
+  meaningful — but Node is the runtime that actually serves requests, and no
+  request has been served by it. Running this same smoke test under Node in CI
+  is the obvious next step.
+- **The upstream was a stub, not LibreTranslate.** It reproduced the contract
+  confirmed in the pinned source, so it validates the client's parsing and its
+  error handling, not LibreTranslate itself. The real round trip is still
+  unobserved. The contract is anchored to a named commit, so if upstream changes
+  it the claim is falsifiable rather than stale by assertion.
 
 **Dependency surface**
 
