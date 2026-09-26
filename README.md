@@ -1,5 +1,7 @@
 # libretranslate-mcp
 
+[![build](https://github.com/BaconDroid/libretranslate-mcp/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/BaconDroid/libretranslate-mcp/actions/workflows/build.yml)
+
 An MCP server that exposes a **self-hosted LibreTranslate** instance as three
 tools: `translate`, `detect`, `languages`.
 
@@ -9,46 +11,51 @@ translation memory.
 
 ---
 
-## Read this first: the typecheck is not green yet, and the runtime is unverified
+## What is verified, and what is not
 
-The project was written on a machine with **no Node.js, no npm, and no
-Docker**. It is now compiled by CI (`.github/workflows/build.yml`), and the
-first run is the ground truth:
+The badge above is the source of truth for the current CI state. This section
+deliberately makes no claim about it, because such claims go stale on every
+run. What follows are durable facts, none of which a CI run can change.
 
-- `npm install` — **resolves cleanly** in CI
-- `tsc --noEmit` — **runs**, and reported **exactly 3 errors**, all in
-  `src/tools/`: the callbacks passed to `server.registerTool` returned
-  hand-rolled result interfaces that are not structurally assignable to the
-  SDK's expected tool-result type
-- those three have been rewritten to return the SDK's own `CallToolResult`
-  type, but **whether that actually fixes the typecheck is unknown**: the
-  next CI run is the first thing that can say so. Read the build badge, not
-  this paragraph
-- the server has **never been started**. Neither transport has been observed
-  working, and no request has ever been served
-- the Docker image has **never been built**
-- the client has **never been pointed at a real LibreTranslate instance**, so
-  the response shapes it parses are still implemented from a reading of
-  LibreTranslate's `app.py`, not from observed traffic
+**Not verified — runtime behaviour**
 
-So: the code is now far enough along that a typechecker can read it, and it
-has been made to compile cleanly **as far as anyone knows** — but nothing here
-should be read as a passing build until CI says so, and nothing here has been
-exercised at runtime. To reproduce locally on a machine with Node 20+:
+- The client has **never been pointed at a real LibreTranslate instance**. The
+  response shapes it parses are implemented from a reading of LibreTranslate's
+  `app.py`, not from observed traffic. That is why the parsing is defensive: a
+  payload mismatch is designed to fail loudly, but it has never actually
+  mismatched in the wild.
+- The server has **never been started against a real upstream**. Neither
+  transport has been observed working, no request has ever been served, and the
+  bearer auth, the body cap and the 401/405/413 paths have only been reasoned
+  about, never exercised.
+
+**Dependency surface**
+
+- `package-lock.json` is committed and CI installs with `npm ci`, so the
+  dependency tree is pinned and reproducible. Bumping the SDK or `zod` is now a
+  deliberate, reviewable change to the lockfile rather than something that
+  happens silently on the next run.
+- The pinned versions were resolved once and never re-checked against the SDK's
+  published type definitions by hand. The `McpServer` / `registerTool` /
+  `StreamableHTTPServerTransport` calls follow the SDK's documented usage; a
+  real signature mismatch would surface as a typecheck failure, not a silent
+  breakage.
+
+**Not verified — published image**
+
+- `unraid-stack/my-libretranslate-mcp.xml` still references the placeholder
+  `REPLACE_ME/libretranslate-mcp:latest`. It must be replaced with a real
+  published image before that template will start; see
+  `unraid-stack/docs/translation-mcp.md`.
+
+To reproduce the CI checks locally on a machine with Node 20+:
 
 ```sh
-npm install
+npm ci
 npm run typecheck
 npm run build
 ```
 
-If the typecheck is green, then — and only then — the Docker image is worth
-building.
-
-**Also unverified:** the exact `@modelcontextprotocol/sdk` API surface this
-code targets. The `McpServer` / `registerTool` / `StreamableHTTPServerTransport`
-calls follow the SDK's documented usage against a caret range, so a newer
-minor release can change types under the code without any local warning.
 
 ---
 

@@ -16,10 +16,11 @@ jobs:
         with:
           node-version: '20'
 
-      # No package-lock.json is committed yet, so `npm ci` cannot be used.
-      # Switch to `npm ci` once the lockfile produced by the first run is committed.
+      # `npm ci` installs exactly what package-lock.json pins, and fails if the
+      # lockfile and package.json disagree. That is the point: a build that
+      # silently re-resolves the caret ranges is not reproducible.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
