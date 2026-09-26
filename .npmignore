@@ -1,0 +1,16 @@
+# Source files (dist/ is what gets published)
+src/
+
+# Development & config
+.claude/
+.idea/
+tsconfig.json
+*.tgz
+
+# Git
+.git/
+.gitignore
+
+# Docs not needed at runtime
+CONTRIBUTING.md
+CLAUDE.md
