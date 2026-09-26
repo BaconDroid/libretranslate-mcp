@@ -62,16 +62,27 @@ run. What follows are durable facts, none of which a CI run can change.
 
 Two limits on that evidence, both real:
 
-- **It ran under Bun 1.4.2, not Node.** The shipped image is `node:22-alpine`.
-  Bun implements `node:http`, `node:crypto` and `fetch`, so the run is
-  meaningful — but Node is the runtime that actually serves requests, and no
-  request has been served by it. Running this same smoke test under Node in CI
-  is the obvious next step.
 - **The upstream was a stub, not LibreTranslate.** It reproduced the contract
   confirmed in the pinned source, so it validates the client's parsing and its
   error handling, not LibreTranslate itself. The real round trip is still
   unobserved. The contract is anchored to a named commit, so if upstream changes
   it the claim is falsifiable rather than stale by assertion.
+- **It first ran under Bun 1.4.2, not Node.** That run was made before the
+  server had ever been executed at all, and Bun implements `node:http`,
+  `node:crypto` and `fetch`, so it was meaningful — but the shipped image is
+  `node:22-alpine`, and no request had been served by Node at the time.
+
+Both limits were closed for the runtime half. `scripts/smoke.mjs` now runs on
+Node in CI on every push: it executes `dist/index.js` — what the container
+actually runs — against the same stub, and covers the status paths, the MCP
+handshake, `tools/list` on a second request, `tools/call` on all three tools, and
+the defensive paths. Fifteen assertions, no new dependency. The step result is
+visible in the workflow; the log body is not readable without repository admin
+access, so the pass is confirmed at step level rather than by reading the line
+it printed. `npm run test:smoke` runs the same thing locally on Node 20+.
+
+It still does not validate LibreTranslate itself, and it does not cover the
+stdio transport.
 
 **Dependency surface**
 
