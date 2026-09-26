@@ -72,17 +72,30 @@ Two limits on that evidence, both real:
   `node:crypto` and `fetch`, so it was meaningful — but the shipped image is
   `node:22-alpine`, and no request had been served by Node at the time.
 
-Both limits were closed for the runtime half. `scripts/smoke.mjs` now runs on
-Node in CI on every push: it executes `dist/index.js` — what the container
-actually runs — against the same stub, and covers the status paths, the MCP
-handshake, `tools/list` on a second request, `tools/call` on all three tools, and
-the defensive paths. Fifteen assertions, no new dependency. The step result is
-visible in the workflow; the log body is not readable without repository admin
-access, so the pass is confirmed at step level rather than by reading the line
-it printed. `npm run test:smoke` runs the same thing locally on Node 20+.
+Both runtime gaps are now closed. Two smoke tests run on Node in CI on every
+push, both against `dist/index.js` — what the container actually executes — and
+both against the same stub. No new dependency: `node:assert` and an exit code.
 
-It still does not validate LibreTranslate itself, and it does not cover the
-stdio transport.
+- `npm run test:smoke` — 15 assertions on the HTTP transport: the status paths,
+  the MCP handshake, `tools/list` on a second request, `tools/call` on all three
+  tools, and the defensive paths.
+- `npm run test:smoke:stdio` — 7 assertions on the stdio transport, spoken as
+  newline-delimited JSON-RPC over stdin/stdout. It also asserts the invariant
+  that only makes stdio safe: a populated stdout carries JSON-RPC and nothing
+  else, while the startup banner goes to stderr. That check runs last on
+  purpose — before any traffic an empty stdout is correct, not a fault.
+
+The step results are visible in the workflow; the log bodies are not readable
+without repository admin access, so the passes are confirmed at step level
+rather than by quoting the lines the tests printed. Both suites were also
+verified to *fail* when an assertion is deliberately broken, which is the only
+reason a green run means anything.
+
+**What is still unverified: LibreTranslate itself.** The upstream in all of the
+above is a stub reproducing the contract read from the pinned source. It
+validates this client's parsing, its error handling and its framing, not the
+real service. The contract is anchored to a named commit, so if upstream changes
+it the claim is falsifiable rather than stale by assertion.
 
 **Dependency surface**
 
