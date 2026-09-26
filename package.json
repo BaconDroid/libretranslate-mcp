@@ -18,6 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:smoke": "node scripts/smoke.mjs",
     "start": "node dist/index.js",
     "start:stdio": "TRANSPORT=stdio node dist/index.js",
     "start:http": "TRANSPORT=http node dist/index.js",

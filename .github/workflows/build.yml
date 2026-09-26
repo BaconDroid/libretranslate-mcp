@@ -28,6 +28,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Exercises the compiled output on Node, which is the runtime the image
+      # ships. The upstream is a stub serving the LibreTranslate response shapes
+      # confirmed in source; this validates the server and its parsing, not
+      # LibreTranslate, and it does not cover the stdio transport.
+      - name: Smoke test
+        run: npm run test:smoke
+
   docker:
     runs-on: ubuntu-latest
     needs: build
